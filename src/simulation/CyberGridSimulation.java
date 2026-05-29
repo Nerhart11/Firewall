@@ -1,5 +1,6 @@
 package simulation;
 
-public class CyberGridSimulation {
+public class CyberGridSimulation 
+{
 
 }
