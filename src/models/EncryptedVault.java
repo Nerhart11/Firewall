@@ -4,30 +4,27 @@ import base.DataCell;
 
 import java.awt.*;
 
+/**
+ * Highly secure data node that has higher HP and is slower to repair.
+ */
 public class EncryptedVault extends DataCell {
 
-    private int maxHP;
-    private int currentHP;
+    private static final Color BASE_COLOR = new Color(155, 0, 245);
+    private static final Color DEAD_COLOR = new Color(40, 0, 65);
 
-    public EncryptedVault(int row, int col, int maxHP) {
-        super(row, col);
-        this.maxHP = maxHP;
-        this.currentHP = maxHP;
+    public EncryptedVault(int row, int col) {
+        super(row, col, 250, 150);
     }
 
     @Override
     public Color getColor() {
-        return null;
+        return getHealthColor(BASE_COLOR, DEAD_COLOR);
     }
 
     @Override
     public String getTypeName() {
-        return "models.EncryptedVault";
+        return "Encrypted Vault";
     }
-
-    public int getCurrentHP() { return currentHP; }
-
-    public int getMaxHP() { return maxHP; }
 
     @Override
     public String toString() {

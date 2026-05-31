@@ -1,17 +1,17 @@
 package base;
 
+/**
+ * Abstract class for static nodes on the grid that can be targeted by malware.
+ */
 public abstract class DataCell extends NetworkNode{
 
-    protected boolean corrupted;
-    protected int corruptionLevel;
-    protected boolean beingRepaired;
-    protected int repairProgress;
-
-    public DataCell(int row, int col) {
-        super(row, col);
-        this.corrupted = false;
-        this.corruptionLevel = 0;
-        this.beingRepaired = false;
-        this.repairProgress = 0;
+    /**
+     * @param row grid row position
+     * @param col grid column position
+     * @param maxHP maximum health before corruption
+     * @param repairThreshold total repair progress needed to restore
+     */
+    public DataCell(int row, int col, int maxHP, int repairThreshold) {
+        super(row, col, maxHP, repairThreshold);
     }
 }

@@ -4,18 +4,21 @@ import base.DataCell;
 
 import java.awt.*;
 
+/**
+ * Critical target node. corruption triggers increased malware aggression.
+ */
 public class SystemCore extends DataCell {
 
-    private boolean compromised;
+    private static final Color BASE_COLOR = new Color(255, 215, 0);
+    private static final Color DEAD_COLOR = new Color(65, 50, 0);
 
     public SystemCore(int row, int col) {
-        super(row, col);
-        this.compromised = false;
+        super(row, col, 500, 300);
     }
 
     @Override
     public Color getColor() {
-        return null;
+        return getHealthColor(BASE_COLOR, DEAD_COLOR);
     }
 
     @Override

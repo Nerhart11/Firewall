@@ -4,25 +4,26 @@ import base.DataCell;
 
 import java.awt.*;
 
+/**
+ * Basic data node and primary fuel for malware spread. Low HP, nothing special about it.
+ */
 public class StandardFile extends DataCell {
 
-    // This is the base color of a standard file when it is alive
     private static final Color BASE_COLOR = new Color(0, 255, 204);
-    // This is the dead color of a standard file when it is dead
     private static final Color DEAD_COLOR = new Color(26, 10, 10);
 
     public StandardFile(int row, int col) {
-        super(row, col);
+        super(row, col, 100, 100);
     }
 
     @Override
     public Color getColor() {
-        return BASE_COLOR;
+        return getHealthColor(BASE_COLOR, DEAD_COLOR);
     }
 
     @Override
     public String getTypeName() {
-        return "models.StandardFile";
+        return "Standard File";
     }
 
     @Override
