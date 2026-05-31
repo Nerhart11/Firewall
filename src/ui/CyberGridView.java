@@ -4,6 +4,8 @@ import java.awt.*;
 import javax.swing.*;
 import simulation.CyberGridSimulation;
 import base.NetworkNode;
+import base.ActiveAgent;
+import java.util.List;
 
 public class CyberGridView 
 {
@@ -13,7 +15,7 @@ public class CyberGridView
     private CyberGridSimulation sim;
     
     private Timer animationTimer;
-    private final int FRAME_DELAY = 100;
+    private final int FRAME_DELAY = 150;
     
     public CyberGridView(CyberGridSimulation sim)
     {
@@ -24,7 +26,7 @@ public class CyberGridView
     
     private void initializeGUI()
     {
-        frame = new JFrame("Network Simulation -- Team Firewall");
+        frame = new JFrame("Network Simulation -- Server Under Attack");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
         
@@ -35,13 +37,16 @@ public class CyberGridView
         controlPanel.setBackground(Color.DARK_GRAY);
         
         JButton startButton = new JButton("Start");
-        JButton pauseButton = new JButton("Pause Sim");
+        JButton pauseButton = new JButton("Pause Simulation");
+        
+        startButton.addActionListener(e -> animationTimer.start());
+        pauseButton.addActionListener(e -> animationTimer.stop());
         
         controlPanel.add(startButton);
         controlPanel.add(pauseButton);
         frame.add(controlPanel, BorderLayout.SOUTH);
         
-        frame.setSize(new Dimension(900, 650));
+        frame.setSize(new Dimension(900, 700));
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
@@ -50,8 +55,7 @@ public class CyberGridView
     {
         animationTimer = new Timer(FRAME_DELAY, e ->
         {
-            sim.update();
-            
+            sim.tick();
             simPanel.repaint();
         });
         
@@ -65,6 +69,7 @@ public class CyberGridView
             setBackground(Color.BLACK);
         }
         
+        @Override
         protected void paintComponent(Graphics g)
         {
             super.paintComponent(g);
@@ -99,6 +104,27 @@ public class CyberGridView
                         g.drawRect(c * cellWidth, r * cellHeight, 
                                 cellWidth, cellHeight);
                     }
+                }
+            }
+            
+            java.util.List<base.ActiveAgent> agents = sim.getAgents();
+            
+            if (agents != null)
+            {
+                for (base.ActiveAgent agent : agents)
+                {
+                    int r = agent.getRow();
+                    int c = agent.getCol();
+                    
+                    g.setColor(agent.getColor());
+                    
+                    g.fillOval(c * cellWidth, r * cellHeight, 
+                                cellWidth, cellHeight);
+                    
+                    g.setColor(Color.WHITE);
+                    
+                    g.drawOval(c * cellWidth, r * cellHeight, 
+                                cellWidth, cellHeight);
                 }
             }
         }
