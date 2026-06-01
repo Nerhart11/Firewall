@@ -35,10 +35,13 @@ public class CyberGridSimulation
         initializeGrid();
     }
 
-    private void initializeGrid() {
+    private void initializeGrid() 
+    {
         // Step 1: Fill everything with StandardFiles
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
+        for (int row = 0; row < rows; row++) 
+        {
+            for (int col = 0; col < cols; col++) 
+            {
                 grid[row][col] = new StandardFile(row, col);
             }
         }
@@ -119,9 +122,25 @@ public class CyberGridSimulation
     public void setNumVaults(int n) { this.numVaults = n; }
     public void setDefaultScanRange(int r) { this.defaultScanRange = r; }
 
-    /** Advances the simulation by one tick. */
-    public void tick() {
-        // TODO: implement simulation loop
+    /** 
+     * Advances the simulation by one tick. 
+    */
+    public void tick() 
+    {
+        if (agents == null) return;
+        
+        // Loop through the separate active agents array list
+        for (base.ActiveAgent agent : agents) 
+        {
+            if (agent instanceof models.MalwareStrain) 
+            {
+                ((models.MalwareStrain) agent).step(this.rows, this.cols);
+            } 
+            else if (agent instanceof models.AntivirusSentinel) 
+            {
+                ((models.AntivirusSentinel) agent).step(this.rows, this.cols);
+            } 
+        }
     }
 }
 
