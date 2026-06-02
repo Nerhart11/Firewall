@@ -26,7 +26,7 @@ public class CyberGridView
     
     private void initializeGUI()
     {
-        frame = new JFrame("Network Simulation -- Server Under Attack");
+        frame = new JFrame("Network Simulation -- Server Is Safe");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
         
@@ -39,8 +39,14 @@ public class CyberGridView
         JButton startButton = new JButton("Start");
         JButton pauseButton = new JButton("Pause Simulation");
         
-        startButton.addActionListener(e -> animationTimer.start());
-        pauseButton.addActionListener(e -> animationTimer.stop());
+        startButton.addActionListener(e -> {
+            animationTimer.start();
+            frame.setTitle("Network Simulation -- Server Under Attack");
+        });
+        pauseButton.addActionListener(e -> {
+            animationTimer.stop();
+            frame.setTitle("Network Simulation -- Simulation Paused");
+        });
         
         controlPanel.add(startButton);
         controlPanel.add(pauseButton);
@@ -59,7 +65,6 @@ public class CyberGridView
             simPanel.repaint();
         });
         
-        animationTimer.start();
     }
     
     private class SimPanel extends JPanel
