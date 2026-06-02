@@ -132,9 +132,35 @@ public class CyberGridView
     
     public static void main(String[] args)
     {
+        // Create a config with defaults, then override whatever you need:
         SimulationConfig config = new SimulationConfig();
+
+        // Grid size
         config.setRows(50);
         config.setCols(50);
+
+        // Agent counts
+        // config.setNumSentinels(5);
+        // config.setNumRepairBots(3);
+        // config.setNumMalware(4);
+        // config.setNumVaults(10);
+
+        // Agent stats
+        // config.setDefaultScanRange(3);
+        // config.setMalwareDamage(20);
+        // config.setSentinelDamage(20);
+        // config.setRepairBotPower(20);
+
+        // Behavior modes
+        // config.setInfectionMode(SimulationConfig.InfectionMode.DIRECT);   // DIRECT, ADJACENT, or AURA
+        // config.setDeathBehavior(SimulationConfig.DeathBehavior.REMOVE);    // REMOVE, RESPAWN, or MALWARE_ONLY
+        // config.setRepairPriority(SimulationConfig.RepairPriority.CORE_AGENTS_GRID);
+
+        // Timing
+        // config.setTickDelay(150);    // ms between ticks
+        // config.setMaxTicks(0);       // 0 = unlimited
+        // config.setRespawnDelay(10);  // ticks before respawn
+
         CyberGridSimulation simEngine = new CyberGridSimulation(config);
 
         SwingUtilities.invokeLater(() -> new CyberGridView(simEngine));
