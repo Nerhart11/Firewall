@@ -134,6 +134,13 @@ public class CyberGridSimulation
                 ((models.AntivirusSentinel) agent).step(this.rows, this.cols);
             } 
         }
+
+        // After all agents have moved, perform their actions (attacks, repairs, infections)
+        for (ActiveAgent agent : agents){
+            if (agent instanceof models.MalwareStrain){
+                ((MalwareStrain) agent).action(grid, agents, config);
+            }
+        }
     }
 }
 
