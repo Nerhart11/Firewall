@@ -15,7 +15,7 @@ public class SimulationTest
 
     public static void main(String[] args) 
     {
-        CyberGridSimulation simulation = new CyberGridSimulation(20, 20);
+        CyberGridSimulation simulation = new CyberGridSimulation(new SimulationConfig());
         NetworkNode[][] grid = simulation.getGrid();
 
         System.out.println("=== Grid ===");
@@ -39,7 +39,7 @@ public class SimulationTest
 
                 System.out.print(symbol + " ");
             }
-            System.out.println(); //Newline at the end of each row
+            System.out.println();
         }
 
         System.out.println("\n=== Agents ===");

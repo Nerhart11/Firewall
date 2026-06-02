@@ -13,9 +13,12 @@ public class AntivirusSentinel extends ActiveAgent
     private static final Color BASE_COLOR = new Color(0, 170, 255);
     private static final Color DEAD_COLOR = new Color(0, 35, 55);
 
-    public AntivirusSentinel(int row, int col, int scanRange) 
+    private int damage;
+
+    public AntivirusSentinel(int row, int col, int damage, int scanRange)
     {
         super(row, col, 150, 120, scanRange);
+        this.damage = damage;
     }
 
     /**

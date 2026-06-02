@@ -3,6 +3,7 @@ package ui;
 import java.awt.*;
 import javax.swing.*;
 import simulation.CyberGridSimulation;
+import simulation.SimulationConfig;
 import base.NetworkNode;
 import base.ActiveAgent;
 import java.util.List;
@@ -15,7 +16,6 @@ public class CyberGridView
     private CyberGridSimulation sim;
     
     private Timer animationTimer;
-    private final int FRAME_DELAY = 150;
     
     public CyberGridView(CyberGridSimulation sim)
     {
@@ -53,7 +53,7 @@ public class CyberGridView
     
     private void setupAnimationTimer()
     {
-        animationTimer = new Timer(FRAME_DELAY, e ->
+        animationTimer = new Timer(sim.getConfig().getTickDelay(), e ->
         {
             sim.tick();
             simPanel.repaint();
@@ -132,8 +132,11 @@ public class CyberGridView
     
     public static void main(String[] args)
     {
-        CyberGridSimulation simEngine = new CyberGridSimulation(50, 50);
-        
+        SimulationConfig config = new SimulationConfig();
+        config.setRows(50);
+        config.setCols(50);
+        CyberGridSimulation simEngine = new CyberGridSimulation(config);
+
         SwingUtilities.invokeLater(() -> new CyberGridView(simEngine));
     }
 }
