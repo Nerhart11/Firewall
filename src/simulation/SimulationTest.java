@@ -13,12 +13,18 @@ public class SimulationTest
     
     private static final boolean SHOW_AGENTS_ON_GRID = false;
 
-    public static void main(String[] args) 
+    public static void main(String[] args)
     {
         CyberGridSimulation simulation = new CyberGridSimulation(new SimulationConfig());
         NetworkNode[][] grid = simulation.getGrid();
 
-        System.out.println("=== Grid ===");
+        SimulationConfig config = new SimulationConfig();
+        String head = "= ";
+        for (int i = 1; i < config.getCols() / 2; i++){
+            head += "= ";
+        }
+
+        System.out.println(head + "Grid " + head);
         for (int row = 0; row < grid.length; row++) 
         {
             for (int col = 0; col < grid[row].length; col++) 
@@ -42,7 +48,7 @@ public class SimulationTest
             System.out.println();
         }
 
-        System.out.println("\n=== Agents ===");
+        System.out.println("\n= = = = = = = Agents = = = = = = =");
         for (ActiveAgent agent : simulation.getAgents()) 
         {
             System.out.println(agent.getTypeName() + " at (" + agent.getRow() 
