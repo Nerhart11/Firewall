@@ -133,6 +133,10 @@ public class CyberGridSimulation
             {
                 ((models.AntivirusSentinel) agent).step(this.rows, this.cols);
             } 
+            else if (agent instanceof models.RepairBot) 
+            {
+                ((models.RepairBot) agent).step(this.rows, this.cols);
+            }
         }
 
         // After all agents have moved, perform their actions (attacks, repairs, infections)
@@ -141,6 +145,91 @@ public class CyberGridSimulation
                 ((MalwareStrain) agent).action(grid, agents, config);
             }
         }
+    }
+
+    /**
+     * Gets the total number of active malware threats remaining on the grid.
+     * @return the count of active MalwareStrain agents
+     */
+    public int getMalwareCount() 
+    {
+        int count = 0;
+        if (this.agents != null) 
+        {
+            for (ActiveAgent a : this.agents) 
+            {
+                if (a instanceof models.MalwareStrain) 
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Calculates the total percentage of the network grid that has been infected.
+     * @return the double value representing the infection percentage (0.0 to 100.0)
+     */
+    public double getInfectionPercentage() 
+    {
+        int totalNodes = rows * cols;
+        int infectedCount = 0;
+
+        if (grid == null) return 0.0;
+
+        for (int r = 0; r < rows; r++) 
+        {
+            for (int c = 0; c < cols; c++) 
+            {
+                NetworkNode node = grid[r][c];
+                // Checks if the node exists and if its custom properties mark it as corrupted/infected
+                if (node != null && node.isCorrupted()) 
+                {
+                    infectedCount++;
+                }
+            }
+        }
+
+        return ((double) infectedCount / totalNodes) * 100.0;
+    }
+    
+    /**
+     * Gets the total number of protective security sentinels currently patrolling.
+     * @return the count of active AntivirusSentinel agents
+     */
+    public int getSentinelCount() 
+    {
+        int count = 0;
+        if (this.agents != null) 
+        {
+            for (ActiveAgent a : this.agents) 
+            {
+                if (a instanceof models.AntivirusSentinel) 
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Gets the total number of rows in the simulation grid matrix.
+     * @return the row count boundary
+     */
+    public int getRows() 
+    {
+        return this.rows;
+    }
+
+    /**
+     * Gets the total number of columns in the simulation grid matrix.
+     * @return the column count boundary
+     */
+    public int getCols() 
+    {
+        return this.cols;
     }
 }
 
