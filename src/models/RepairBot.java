@@ -35,8 +35,9 @@ public class RepairBot extends ActiveAgent {
     public void setRepairPower(int repairPower) { this.repairPower = repairPower; }
 
     /**
-     * Act phase: pick a corrupted target by priority (Core &gt; Agents &gt; Grid),
-     * nearest within the first non-empty category, and queue repair if adjacent.
+     * Act phase: pick a target that needs repair (damaged or corrupted) by priority
+     * (Core &gt; Agents &gt; Grid), nearest within the first non-empty category, and
+     * queue repair if adjacent.
      */
     @Override
     public void action(NetworkNode[][] grid, List<ActiveAgent> agents,
@@ -49,8 +50,9 @@ public class RepairBot extends ActiveAgent {
     }
 
     /**
-     * Chooses a corrupted target following the Core &gt; Agents &gt; Grid priority.
-     * The first category with a candidate in range wins; ties broken by distance.
+     * Chooses a target needing repair following the Core &gt; Agents &gt; Grid
+     * priority. The first category with a candidate in range wins; ties broken by
+     * distance.
      */
     private NetworkNode selectTarget(NetworkNode[][] grid, List<ActiveAgent> agents) {
         List<NetworkNode> cores = new ArrayList<>();
@@ -63,7 +65,7 @@ public class RepairBot extends ActiveAgent {
             int maxCol = Math.min(grid[r].length - 1, getCol() + getScanRange());
             for (int c = minCol; c <= maxCol; c++) {
                 NetworkNode node = grid[r][c];
-                if (node == null || !node.isCorrupted()) {
+                if (node == null || !node.needsRepair()) {
                     continue;
                 }
                 if (node instanceof SystemCore) {
@@ -81,7 +83,7 @@ public class RepairBot extends ActiveAgent {
 
         List<NetworkNode> downedAgents = new ArrayList<>();
         for (ActiveAgent agent : agents) {
-            if (agent != this && !(agent instanceof MalwareStrain) && agent.isCorrupted()) {
+            if (agent != this && !(agent instanceof MalwareStrain) && agent.needsRepair()) {
                 downedAgents.add(agent);
             }
         }
@@ -94,12 +96,12 @@ public class RepairBot extends ActiveAgent {
     }
 
     /**
-     * Move phase: head toward a corrupted target, else roam randomly.
-     * A fully repaired target is no longer corrupted, so the bot reverts to roaming.
+     * Move phase: head toward a target that still needs repair, else roam randomly.
+     * Once a target is back to full health the bot reverts to roaming.
      */
     @Override
     public void move(int maxRows, int maxCols) {
-        if (currentTarget == null || !currentTarget.isCorrupted()) {
+        if (currentTarget == null || !currentTarget.needsRepair()) {
             randomWalk(maxRows, maxCols);
         } else {
             moveToward(currentTarget.getRow(), currentTarget.getCol(), maxRows, maxCols);

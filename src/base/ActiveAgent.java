@@ -115,6 +115,21 @@ public abstract class ActiveAgent extends NetworkNode {
     }
 
     /**
+     * Rolls a randomized damage amount around the given base (a spread of half the
+     * base). This keeps combat from being perfectly deterministic, so two evenly
+     * matched fighters won't always trade fatal blows on the same tick.
+     *
+     * @param baseDamage the agent's normal damage
+     * @return a damage value in the range [base - base/2, base + base/2]
+     */
+    protected int rollDamage(int baseDamage) {
+        Random rand = new Random();
+        int variance = baseDamage / 2;
+        int min = baseDamage - variance;
+        return min + rand.nextInt(2 * variance + 1);
+    }
+
+    /**
      * Takes a single random step (-1, 0, or +1 per axis), staying inside the grid.
      */
     protected void randomWalk(int maxRows, int maxCols) {

@@ -3,9 +3,30 @@ package simulation;
 public class SimulationConfig {
 
     // Enums for toggle options
+
+    // How malware damages the grid each tick:
+    //   DIRECT   - only the cell the malware is standing on
+    //   ADJACENT - the whole 3x3 block, full damage to each
+    //   AURA     - the current cell at full damage, neighbors at half
     public enum InfectionMode { DIRECT, ADJACENT, AURA}
+
+    // What happens to malware once it is killed (defenders always stay frozen
+    // and repairable):
+    //   REMOVE       - killed malware is taken off the grid for good
+    //   RESPAWN      - killed malware is removed, then a replacement spawns at a
+    //                  random edge after respawnDelay ticks
+    //   MALWARE_ONLY - not yet implemented; currently a no-op, so killed malware
+    //                  just stays frozen in place. Reserved for future use.
     public enum DeathBehavior {REMOVE, RESPAWN, MALWARE_ONLY}
+
+    // Order a RepairBot picks what to fix first:
+    //   CORE_AGENTS_GRID - System Core, then downed agents, then ordinary nodes
     public enum RepairPriority {CORE_AGENTS_GRID}
+
+    // How malware decides where to move:
+    //   SEEK_TARGET - hunt down the nearest healthy node and infect it
+    //   RANDOM      - wander randomly, infecting whatever it happens to sit on
+    public enum MalwareMovement { SEEK_TARGET, RANDOM }
 
     // Defaults for grid size
     private int rows = 20;
@@ -15,6 +36,7 @@ public class SimulationConfig {
     private InfectionMode infectionMode = InfectionMode.DIRECT;
     private DeathBehavior deathBehavior = DeathBehavior.REMOVE;
     private RepairPriority repairPriority = RepairPriority.CORE_AGENTS_GRID;
+    private MalwareMovement malwareMovement = MalwareMovement.SEEK_TARGET;
 
     // Defaults for # of Agents on the grid
     private int numSentinels = 5;
@@ -40,6 +62,7 @@ public class SimulationConfig {
     public InfectionMode getInfectionMode() { return infectionMode; }
     public DeathBehavior getDeathBehavior() { return deathBehavior; }
     public RepairPriority getRepairPriority() { return repairPriority; }
+    public MalwareMovement getMalwareMovement() { return malwareMovement; }
 
     public int getNumSentinels() { return numSentinels; }
     public int getNumRepairBots() { return numRepairBots; }
@@ -62,6 +85,7 @@ public class SimulationConfig {
     public void setInfectionMode(InfectionMode mode) { this.infectionMode = mode; }
     public void setDeathBehavior(DeathBehavior behavior) { this.deathBehavior = behavior; }
     public void setRepairPriority(RepairPriority priority) { this.repairPriority = priority; }
+    public void setMalwareMovement(MalwareMovement movement) { this.malwareMovement = movement; }
 
     public void setNumSentinels(int n) { this.numSentinels = n; }
     public void setNumRepairBots(int n) { this.numRepairBots = n; }

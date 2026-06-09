@@ -42,7 +42,7 @@ public class AntivirusSentinel extends ActiveAgent
 
         currentTarget = findNearestInRange(malware);
         if (currentTarget != null && stepDistanceTo(currentTarget) <= 1) {
-            resolver.queueDamage(currentTarget, damage);
+            resolver.queueDamage(currentTarget, rollDamage(damage));
         }
     }
 

@@ -20,6 +20,9 @@ public class CyberGridSimulation
     private final Random random = new Random();
     private final SimulationConfig config;
 
+    // Countdown timers (in ticks) for malware waiting to respawn under RESPAWN mode.
+    private List<Integer> respawnTimers = new ArrayList<>();
+
     public CyberGridSimulation(SimulationConfig config)
     {
         this.config = config;
@@ -91,19 +94,28 @@ public class CyberGridSimulation
         }
 
         // Step 6: Spawn MalwareStrains at random edge positions
-        for (int i = 0; i < config.getNumMalware(); i++) 
+        for (int i = 0; i < config.getNumMalware(); i++)
         {
-            int row, col;
-            int edge = random.nextInt(4);
-            switch (edge) 
-            {
-                case 0: row = 0; col = random.nextInt(cols); break;
-                case 1: row = rows - 1; col = random.nextInt(cols); break;
-                case 2: row = random.nextInt(rows); col = 0; break;
-                default: row = random.nextInt(rows); col = cols - 1; break;
-            }
-            agents.add(new MalwareStrain(row, col, config.getMalwareDamage(), config.getDefaultScanRange()));
+            spawnMalware();
         }
+    }
+
+    /**
+     * Spawns a single MalwareStrain at a random edge of the grid using the
+     * configured malware stats. Shared by initial setup and respawning.
+     */
+    private void spawnMalware()
+    {
+        int row, col;
+        int edge = random.nextInt(4);
+        switch (edge)
+        {
+            case 0: row = 0; col = random.nextInt(cols); break;
+            case 1: row = rows - 1; col = random.nextInt(cols); break;
+            case 2: row = random.nextInt(rows); col = 0; break;
+            default: row = random.nextInt(rows); col = cols - 1; break;
+        }
+        agents.add(new MalwareStrain(row, col, config.getMalwareDamage(), config.getDefaultScanRange()));
     }
 
     /** @return the data layer grid */
@@ -138,14 +150,43 @@ public class CyberGridSimulation
         // Resolve all queued damage and repair at once.
         resolver.apply();
 
-        // Remove killed malware so the threat count can actually drop.
-        if (config.getDeathBehavior() == SimulationConfig.DeathBehavior.REMOVE)
+        SimulationConfig.DeathBehavior deathBehavior = config.getDeathBehavior();
+
+        // Tick down pending respawns and bring back any malware whose delay elapsed.
+        if (deathBehavior == SimulationConfig.DeathBehavior.RESPAWN)
+        {
+            List<Integer> stillWaiting = new ArrayList<>();
+            for (int ticksLeft : respawnTimers)
+            {
+                if (ticksLeft <= 1)
+                {
+                    spawnMalware();
+                }
+                else
+                {
+                    stillWaiting.add(ticksLeft - 1);
+                }
+            }
+            respawnTimers = stillWaiting;
+        }
+
+        // Remove killed malware so the threat count can drop. Under RESPAWN we also
+        // queue a replacement to appear after the configured delay.
+        if (deathBehavior == SimulationConfig.DeathBehavior.REMOVE
+                || deathBehavior == SimulationConfig.DeathBehavior.RESPAWN)
         {
             List<ActiveAgent> survivors = new ArrayList<>();
             for (ActiveAgent agent : agents)
             {
                 boolean killedMalware = (agent instanceof MalwareStrain) && agent.isCorrupted();
-                if (!killedMalware)
+                if (killedMalware)
+                {
+                    if (deathBehavior == SimulationConfig.DeathBehavior.RESPAWN)
+                    {
+                        respawnTimers.add(config.getRespawnDelay());
+                    }
+                }
+                else
                 {
                     survivors.add(agent);
                 }

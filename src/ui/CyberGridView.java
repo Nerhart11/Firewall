@@ -32,6 +32,7 @@ public class CyberGridView
     private void initializeGUI()
     {
         frame = new JFrame("Network Simulation -- Server Is Safe");
+
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
         
@@ -201,8 +202,21 @@ public class CyberGridView
         JTextField repairField = new JTextField("3", 5);
         JTextField vaultField = new JTextField("10", 5);
 
+        JComboBox<SimulationConfig.MalwareMovement> malwareMoveBox =
+                new JComboBox<>(SimulationConfig.MalwareMovement.values());
+        malwareMoveBox.setSelectedItem(SimulationConfig.MalwareMovement.SEEK_TARGET);
+
+        // Only the implemented death behaviors are offered.
+        JComboBox<SimulationConfig.DeathBehavior> deathBehaviorBox =
+                new JComboBox<>(new SimulationConfig.DeathBehavior[]{
+                        SimulationConfig.DeathBehavior.REMOVE,
+                        SimulationConfig.DeathBehavior.RESPAWN});
+        deathBehaviorBox.setSelectedItem(SimulationConfig.DeathBehavior.REMOVE);
+
+        JTextField respawnDelayField = new JTextField("10", 5);
+
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(6, 2, 10, 10));
+        panel.setLayout(new GridLayout(9, 2, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         panel.add(new JLabel("Grid Rows:"));
@@ -217,6 +231,12 @@ public class CyberGridView
         panel.add(repairField);
         panel.add(new JLabel("Encrypted Vaults:"));
         panel.add(vaultField);
+        panel.add(new JLabel("Malware Movement:"));
+        panel.add(malwareMoveBox);
+        panel.add(new JLabel("On Death:"));
+        panel.add(deathBehaviorBox);
+        panel.add(new JLabel("Respawn Delay (ticks):"));
+        panel.add(respawnDelayField);
 
         int result = JOptionPane.showConfirmDialog(
             null, 
@@ -236,6 +256,9 @@ public class CyberGridView
                 defaults.setNumSentinels(Integer.parseInt(sentinelField.getText().trim()));
                 defaults.setNumRepairBots(Integer.parseInt(repairField.getText().trim()));
                 defaults.setNumVaults(Integer.parseInt(vaultField.getText().trim()));
+                defaults.setMalwareMovement((SimulationConfig.MalwareMovement) malwareMoveBox.getSelectedItem());
+                defaults.setDeathBehavior((SimulationConfig.DeathBehavior) deathBehaviorBox.getSelectedItem());
+                defaults.setRespawnDelay(Integer.parseInt(respawnDelayField.getText().trim()));
                 return true;
             } 
             catch (NumberFormatException e) 

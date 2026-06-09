@@ -59,6 +59,9 @@ public abstract class NetworkNode {
     /** @return true if this node has been fully corrupted */
     public boolean isCorrupted() { return isCorrupted; }
 
+    /** @return true if this node is corrupted or sitting below full health */
+    public boolean needsRepair() { return isCorrupted || currentHP < maxHP; }
+
     /** @return true if a RepairBot is currently repairing this node */
     public boolean isBeingRepaired() { return beingRepaired; }
 
@@ -98,17 +101,29 @@ public abstract class NetworkNode {
     }
 
     /**
-     * Progresses repair on this node by the given speed.
+     * Progresses repair on this node by the given speed. A corrupted node must
+     * accumulate repairThreshold worth of progress before it comes back; a node
+     * that is merely damaged has its health restored directly.
      *
-     * @param repairSpeed amount of repair progress per tick
-     * @return true if repair just completed, false if still in progress
+     * @param repairSpeed amount of repair applied this tick
+     * @return true if the node just reached full health, false if still in progress
      */
     public boolean repair(int repairSpeed) {
-        this.repairProgress += repairSpeed;
-        if (this.repairProgress >= this.repairThreshold) {
-            this.isCorrupted = false;
+        if (this.isCorrupted) {
+            this.repairProgress += repairSpeed;
+            if (this.repairProgress >= this.repairThreshold) {
+                this.isCorrupted = false;
+                this.currentHP = maxHP;
+                this.repairProgress = 0;
+                return true;
+            }
+            return false;
+        }
+
+        // Damaged but still alive: top its health back up.
+        this.currentHP += repairSpeed;
+        if (this.currentHP >= this.maxHP) {
             this.currentHP = maxHP;
-            this.repairProgress = 0;
             return true;
         }
         return false;
