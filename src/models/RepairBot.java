@@ -2,8 +2,12 @@ package models;
 
 import base.ActiveAgent;
 import base.NetworkNode;
+import simulation.CombatResolver;
+import simulation.SimulationConfig;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Specialized agent that scans for corrupted nodes and restores them.
@@ -14,7 +18,6 @@ public class RepairBot extends ActiveAgent {
     private static final Color DEAD_COLOR = new Color(35, 45, 55);
 
     private int repairPower;
-    private NetworkNode currentTarget;
 
     /**
      * @param row grid row position
@@ -31,6 +34,78 @@ public class RepairBot extends ActiveAgent {
     public int getRepairPower() { return repairPower; }
     public void setRepairPower(int repairPower) { this.repairPower = repairPower; }
 
+    /**
+     * Act phase: pick a corrupted target by priority (Core &gt; Agents &gt; Grid),
+     * nearest within the first non-empty category, and queue repair if adjacent.
+     */
+    @Override
+    public void action(NetworkNode[][] grid, List<ActiveAgent> agents,
+                       SimulationConfig config, CombatResolver resolver) {
+        currentTarget = selectTarget(grid, agents);
+        if (currentTarget != null && stepDistanceTo(currentTarget) <= 1) {
+            currentTarget.setBeingRepaired(true);
+            resolver.queueRepair(currentTarget, repairPower);
+        }
+    }
+
+    /**
+     * Chooses a corrupted target following the Core &gt; Agents &gt; Grid priority.
+     * The first category with a candidate in range wins; ties broken by distance.
+     */
+    private NetworkNode selectTarget(NetworkNode[][] grid, List<ActiveAgent> agents) {
+        List<NetworkNode> cores = new ArrayList<>();
+        List<NetworkNode> dataCells = new ArrayList<>();
+
+        int minRow = Math.max(0, getRow() - getScanRange());
+        int maxRow = Math.min(grid.length - 1, getRow() + getScanRange());
+        for (int r = minRow; r <= maxRow; r++) {
+            int minCol = Math.max(0, getCol() - getScanRange());
+            int maxCol = Math.min(grid[r].length - 1, getCol() + getScanRange());
+            for (int c = minCol; c <= maxCol; c++) {
+                NetworkNode node = grid[r][c];
+                if (node == null || !node.isCorrupted()) {
+                    continue;
+                }
+                if (node instanceof SystemCore) {
+                    cores.add(node);
+                } else {
+                    dataCells.add(node);
+                }
+            }
+        }
+
+        NetworkNode core = findNearestInRange(cores);
+        if (core != null) {
+            return core;
+        }
+
+        List<NetworkNode> downedAgents = new ArrayList<>();
+        for (ActiveAgent agent : agents) {
+            if (agent != this && !(agent instanceof MalwareStrain) && agent.isCorrupted()) {
+                downedAgents.add(agent);
+            }
+        }
+        NetworkNode agent = findNearestInRange(downedAgents);
+        if (agent != null) {
+            return agent;
+        }
+
+        return findNearestInRange(dataCells);
+    }
+
+    /**
+     * Move phase: head toward a corrupted target, else roam randomly.
+     * A fully repaired target is no longer corrupted, so the bot reverts to roaming.
+     */
+    @Override
+    public void move(int maxRows, int maxCols) {
+        if (currentTarget == null || !currentTarget.isCorrupted()) {
+            randomWalk(maxRows, maxCols);
+        } else {
+            moveToward(currentTarget.getRow(), currentTarget.getCol(), maxRows, maxCols);
+        }
+    }
+
     @Override
     public Color getColor() {
         return getHealthColor(BASE_COLOR, DEAD_COLOR);
@@ -44,33 +119,5 @@ public class RepairBot extends ActiveAgent {
     @Override
     public String toString() {
         return "R";
-    }
-    
-    /**
-     * Steps the repair bot's movement randomly within the grid boundaries.
-     * @param maxRows the maximum row boundary of the simulation grid
-     * @param maxCols the maximum column boundary of the simulation grid
-     */
-    public void step(int maxRows, int maxCols) 
-    {
-        java.util.Random rand = new java.util.Random();
-        
-        // Generate a random shift: -1 (up/left), 0 (stay), or 1 (down/right)
-        int deltaRow = rand.nextInt(3) - 1;
-        int deltaCol = rand.nextInt(3) - 1;
-        
-        // Calculate new potential coordinates
-        int newRow = this.getRow() + deltaRow;
-        int newCol = this.getCol() + deltaCol;
-        
-        // Clamp the values so the bot never walks off the edge of the grid layout map
-        if (newRow >= 0 && newRow < maxRows) 
-        {
-            this.row = newRow;
-        }
-        if (newCol >= 0 && newCol < maxCols) 
-        {
-            this.col = newCol;
-        }
     }
 }

@@ -115,34 +115,50 @@ public class CyberGridSimulation
     /** @return the simulation configuration */
     public SimulationConfig getConfig() { return config; }
 
-    /** 
-     * Advances the simulation by one tick. 
-    */
-    public void tick() 
+    /**
+     * Advances the simulation by one tick. Every agent acts first (queuing combat),
+     * the combat is applied all at once, killed malware is removed, and then the
+     * surviving agents move. Acting before moving keeps the combat fair.
+     */
+    public void tick()
     {
         if (agents == null) return;
-        
-        // Loop through the separate active agents array list
-        for (base.ActiveAgent agent : agents) 
+
+        CombatResolver resolver = new CombatResolver();
+
+        // Act phase: every active agent scans and queues combat (no mutation yet).
+        for (ActiveAgent agent : agents)
         {
-            if (agent instanceof models.MalwareStrain) 
+            if (!agent.isCorrupted())
             {
-                ((models.MalwareStrain) agent).step(this.rows, this.cols);
-            } 
-            else if (agent instanceof models.AntivirusSentinel) 
-            {
-                ((models.AntivirusSentinel) agent).step(this.rows, this.cols);
-            } 
-            else if (agent instanceof models.RepairBot) 
-            {
-                ((models.RepairBot) agent).step(this.rows, this.cols);
+                agent.action(grid, agents, config, resolver);
             }
         }
 
-        // After all agents have moved, perform their actions (attacks, repairs, infections)
-        for (ActiveAgent agent : agents){
-            if (agent instanceof models.MalwareStrain){
-                ((MalwareStrain) agent).action(grid, agents, config);
+        // Resolve all queued damage and repair at once.
+        resolver.apply();
+
+        // Remove killed malware so the threat count can actually drop.
+        if (config.getDeathBehavior() == SimulationConfig.DeathBehavior.REMOVE)
+        {
+            List<ActiveAgent> survivors = new ArrayList<>();
+            for (ActiveAgent agent : agents)
+            {
+                boolean killedMalware = (agent instanceof MalwareStrain) && agent.isCorrupted();
+                if (!killedMalware)
+                {
+                    survivors.add(agent);
+                }
+            }
+            agents = survivors;
+        }
+
+        // Move phase: surviving agents reposition toward their chosen targets.
+        for (ActiveAgent agent : agents)
+        {
+            if (!agent.isCorrupted())
+            {
+                agent.move(this.rows, this.cols);
             }
         }
     }
