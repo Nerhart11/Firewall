@@ -1,0 +1,4 @@
+- Add tile labels, to identify what color is what type of tile
+- Healthy / Dead tile color change
+- change the standard file spawning style, rather than just having every tile besides core and vaults be standard files
+-
