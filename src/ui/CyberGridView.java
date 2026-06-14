@@ -1,12 +1,12 @@
 package ui;
 
 import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
+import javax.swing.text.*;
 import simulation.CyberGridSimulation;
 import simulation.SimulationConfig;
 import base.NetworkNode;
-import base.ActiveAgent;
-import java.util.List;
 
 public class CyberGridView 
 {
@@ -38,8 +38,7 @@ public class CyberGridView
         
         simPanel = new SimPanel();
         frame.add(simPanel, BorderLayout.CENTER);
-        
-        // Setup console telemetry sidebar layout panel
+
         // Setup console telemetry sidebar layout panel
         JPanel sidePanel = new JPanel();
         sidePanel.setLayout(new BoxLayout(sidePanel, BoxLayout.Y_AXIS));
@@ -195,12 +194,16 @@ public class CyberGridView
      */
     private static boolean showSetupDialog(SimulationConfig defaults)
     {
-        JTextField rowField = new JTextField("50", 5);
-        JTextField colField = new JTextField("50", 5);
-        JTextField malwareField = new JTextField("4", 5);
-        JTextField sentinelField = new JTextField("5", 5);
-        JTextField repairField = new JTextField("3", 5);
-        JTextField vaultField = new JTextField("10", 5);
+        // Fields start empty so their range hint shows as placeholder text. Leaving a
+        // field blank keeps the program default for that value.
+        LimitedField rowField = new LimitedField("10 - 150", 10, 150, 6);
+        LimitedField colField = new LimitedField("10 - 150", 10, 150, 6);
+        LimitedField malwareField = new LimitedField("0 - 100", 0, 100, 6);
+        LimitedField sentinelField = new LimitedField("0 - 100", 0, 100, 6);
+        LimitedField repairField = new LimitedField("0 - 100", 0, 100, 6);
+        // Vaults can occupy any non-core cell; the hard cap (rows x cols - 4) is applied
+        // on OK once the final grid size is known.
+        LimitedField vaultField = new LimitedField("0 - rows x cols - 4", 0, 150 * 150 - 4, 6);
 
         JComboBox<SimulationConfig.MalwareMovement> malwareMoveBox =
                 new JComboBox<>(SimulationConfig.MalwareMovement.values());
@@ -213,7 +216,7 @@ public class CyberGridView
                         SimulationConfig.DeathBehavior.RESPAWN});
         deathBehaviorBox.setSelectedItem(SimulationConfig.DeathBehavior.REMOVE);
 
-        JTextField respawnDelayField = new JTextField("10", 5);
+        LimitedField respawnDelayField = new LimitedField("0 - 500", 0, 500, 6);
 
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(9, 2, 10, 10));
@@ -246,28 +249,135 @@ public class CyberGridView
             JOptionPane.PLAIN_MESSAGE
         );
 
-        if (result == JOptionPane.OK_OPTION) 
+        if (result == JOptionPane.OK_OPTION)
         {
-            try 
-            {
-                defaults.setRows(Integer.parseInt(rowField.getText().trim()));
-                defaults.setCols(Integer.parseInt(colField.getText().trim()));
-                defaults.setNumMalware(Integer.parseInt(malwareField.getText().trim()));
-                defaults.setNumSentinels(Integer.parseInt(sentinelField.getText().trim()));
-                defaults.setNumRepairBots(Integer.parseInt(repairField.getText().trim()));
-                defaults.setNumVaults(Integer.parseInt(vaultField.getText().trim()));
-                defaults.setMalwareMovement((SimulationConfig.MalwareMovement) malwareMoveBox.getSelectedItem());
-                defaults.setDeathBehavior((SimulationConfig.DeathBehavior) deathBehaviorBox.getSelectedItem());
-                defaults.setRespawnDelay(Integer.parseInt(respawnDelayField.getText().trim()));
-                return true;
-            } 
-            catch (NumberFormatException e) 
-            {
-                JOptionPane.showMessageDialog(null, "Invalid entry! Reverting to program defaults.", "Error", JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
+            // The fields already block out-of-range input, so here we just read each
+            // value (falling back to the existing default when a field was left blank).
+            int rows = rowField.getValueOrDefault(defaults.getRows());
+            int cols = colField.getValueOrDefault(defaults.getCols());
+
+            // Vaults can only fill non-core cells, so cap to what the chosen grid holds.
+            int vaults = Math.min(vaultField.getValueOrDefault(defaults.getNumVaults()), rows * cols - 4);
+
+            defaults.setRows(rows);
+            defaults.setCols(cols);
+            defaults.setNumMalware(malwareField.getValueOrDefault(defaults.getNumMalware()));
+            defaults.setNumSentinels(sentinelField.getValueOrDefault(defaults.getNumSentinels()));
+            defaults.setNumRepairBots(repairField.getValueOrDefault(defaults.getNumRepairBots()));
+            defaults.setNumVaults(vaults);
+            defaults.setMalwareMovement((SimulationConfig.MalwareMovement) malwareMoveBox.getSelectedItem());
+            defaults.setDeathBehavior((SimulationConfig.DeathBehavior) deathBehaviorBox.getSelectedItem());
+            defaults.setRespawnDelay(respawnDelayField.getValueOrDefault(defaults.getRespawnDelay()));
+            return true;
         }
         return false;
+    }
+
+    /**
+     * A {@link JTextField} for the setup dialog that enforces a numeric range inline:
+     * it accepts digits only, rejects keystrokes that would push the value above
+     * {@code max}, and snaps a too-low value up to {@code min} when focus leaves the
+     * field. While empty it paints greyed-out placeholder text describing the range.
+     */
+    private static class LimitedField extends JTextField
+    {
+        private final String placeholder;
+        private final int min;
+        private final int max;
+
+        LimitedField(String placeholder, int min, int max, int columns)
+        {
+            super(columns);
+            this.placeholder = placeholder;
+            this.min = min;
+            this.max = max;
+
+            // Reject non-digits and anything that would exceed the maximum as it is typed.
+            ((AbstractDocument) getDocument()).setDocumentFilter(new DocumentFilter()
+            {
+                @Override
+                public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr)
+                        throws BadLocationException
+                {
+                    replace(fb, offset, 0, text, attr);
+                }
+
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attr)
+                        throws BadLocationException
+                {
+                    String current = fb.getDocument().getText(0, fb.getDocument().getLength());
+                    String proposed = current.substring(0, offset)
+                            + (text == null ? "" : text)
+                            + current.substring(offset + length);
+
+                    if (proposed.isEmpty())
+                    {
+                        fb.replace(offset, length, text, attr);   // allow clearing the field
+                        return;
+                    }
+                    if (!proposed.matches("\\d+"))
+                    {
+                        return;   // digits only
+                    }
+                    try
+                    {
+                        if (Long.parseLong(proposed) > max)
+                        {
+                            return;   // would exceed the maximum
+                        }
+                    }
+                    catch (NumberFormatException tooLong)
+                    {
+                        return;   // absurdly long number, definitely over max
+                    }
+                    fb.replace(offset, length, text, attr);
+                }
+            });
+
+            // The minimum can't be enforced mid-typing (e.g. "1" on the way to "15"),
+            // so snap any too-low value up once the user leaves the field.
+            addFocusListener(new FocusAdapter()
+            {
+                @Override
+                public void focusLost(FocusEvent e)
+                {
+                    String t = getText().trim();
+                    if (!t.isEmpty() && Integer.parseInt(t) < min)
+                    {
+                        setText(String.valueOf(min));
+                    }
+                }
+            });
+        }
+
+        /** @return the field's value clamped to [min, max], or {@code fallback} if blank. */
+        int getValueOrDefault(int fallback)
+        {
+            String t = getText().trim();
+            if (t.isEmpty())
+            {
+                return fallback;
+            }
+            return Math.max(min, Math.min(max, Integer.parseInt(t)));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g)
+        {
+            super.paintComponent(g);
+            if (getText().isEmpty())
+            {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.GRAY);
+                Insets insets = getInsets();
+                FontMetrics fm = g2.getFontMetrics();
+                int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(placeholder, insets.left + 1, y);
+                g2.dispose();
+            }
+        }
     }
     
     private class SimPanel extends JPanel

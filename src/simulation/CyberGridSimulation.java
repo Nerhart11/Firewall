@@ -5,6 +5,8 @@ import base.NetworkNode;
 import models.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -56,17 +58,35 @@ public class CyberGridSimulation
             }
         }
 
-        // Step 3: Place EncryptedVaults in a ring around the core
-        for (int i = 0; i < config.getNumVaults(); i++) 
+        // Step 3: Place EncryptedVaults on the StandardFile cells nearest the core.
+        // We gather every free cell, shuffle it, then stably sort by ring distance to
+        // the core. Because List.sort is stable, vaults fill the innermost ring first
+        // but land at random spots within each ring -- and the exact requested count is
+        // always placed as long as the grid physically has room (guaranteed by the
+        // config caps applied in the setup dialog).
+        List<int[]> freeCells = new ArrayList<>();
+        for (int row = 0; row < rows; row++)
         {
-            int row, col;
-            do 
+            for (int col = 0; col < cols; col++)
             {
-                row = centerRow - 2 + random.nextInt(5);
-                col = centerCol - 2 + random.nextInt(5);
-            } while (row < 0 || row >= rows || col < 0 || col >= cols
-                    || !(grid[row][col] instanceof StandardFile));
-            grid[row][col] = new EncryptedVault(row, col);
+                if (grid[row][col] instanceof StandardFile)
+                {
+                    freeCells.add(new int[]{row, col});
+                }
+            }
+        }
+
+        final int coreRow = centerRow;
+        final int coreCol = centerCol;
+        Collections.shuffle(freeCells, random);
+        freeCells.sort(Comparator.comparingInt(
+                cell -> Math.max(Math.abs(cell[0] - coreRow), Math.abs(cell[1] - coreCol))));
+
+        int vaultsToPlace = Math.min(config.getNumVaults(), freeCells.size());
+        for (int i = 0; i < vaultsToPlace; i++)
+        {
+            int[] cell = freeCells.get(i);
+            grid[cell[0]][cell[1]] = new EncryptedVault(cell[0], cell[1]);
         }
 
         // Step 4: Spawn AntivirusSentinels near the core
