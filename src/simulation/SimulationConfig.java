@@ -53,7 +53,11 @@ public class SimulationConfig {
     // Timing behavior
     private int respawnDelay = 10;
     private int tickDelay = 150;
-    private int maxTicks = 0;
+    // Survival win: reach this many ticks with the core still alive. 0 disables it.
+    private int maxTicks = 1000;
+
+    // Loss trigger: defeat once this percentage of the grid is corrupted.
+    private double infectionLossThreshold = 75.0;
 
     // Getters
     public int getRows() { return rows; }
@@ -77,6 +81,7 @@ public class SimulationConfig {
     public int getRespawnDelay() { return respawnDelay; }
     public int getTickDelay() { return tickDelay; }
     public int getMaxTicks() { return maxTicks; }
+    public double getInfectionLossThreshold() { return infectionLossThreshold; }
 
     // Setters
     public void setRows(int rows) { this.rows = rows; }
@@ -100,4 +105,5 @@ public class SimulationConfig {
     public void setRespawnDelay(int delay) { this.respawnDelay = delay; }
     public void setTickDelay(int delay) { this.tickDelay = delay; }
     public void setMaxTicks(int max) { this.maxTicks = max; }
+    public void setInfectionLossThreshold(double percent) { this.infectionLossThreshold = percent; }
 }

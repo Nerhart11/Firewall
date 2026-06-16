@@ -21,6 +21,11 @@ public class CyberGridView
     private JLabel sentinelValueLabel;
     private JLabel infectionValueLabel;
     private JLabel statusValueLabel;
+
+    // Kept as fields so they can be disabled once the simulation ends.
+    private JButton startButton;
+    private JButton pauseButton;
+    private JSlider speedSlider;
     
     public CyberGridView(CyberGridSimulation sim)
     {
@@ -105,10 +110,10 @@ public class CyberGridView
         controlPanel.setBackground(Color.DARK_GRAY);
         controlPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 15, 10));
         
-        JButton startButton = new JButton("Start");
-        JButton pauseButton = new JButton("Pause Simulation");
-        
-        JSlider speedSlider = new JSlider(JSlider.HORIZONTAL, 1, 10, 8);
+        startButton = new JButton("Start");
+        pauseButton = new JButton("Pause Simulation");
+
+        speedSlider = new JSlider(JSlider.HORIZONTAL, 1, 10, 8);
         speedSlider.setBackground(Color.DARK_GRAY);
         speedSlider.setForeground(Color.WHITE);
         speedSlider.setMajorTickSpacing(1);
@@ -167,24 +172,51 @@ public class CyberGridView
             
             // Directly update the clean number labels on every tick
             malwareValueLabel.setText(String.valueOf(sim.getMalwareCount()));
-            sentinelValueLabel.setText(String.valueOf(sim.getSentinelCount()));
+            sentinelValueLabel.setText(String.valueOf(sim.getDefenderCount()));
             infectionValueLabel.setText(String.format("%.1f%%", sim.getInfectionPercentage()));
             
             // Handle active security state shifts dynamically
-            if (sim.getInfectionPercentage() > 25.0 || sim.getMalwareCount() > 5) 
+            if (sim.getInfectionPercentage() > 25.0 || sim.getMalwareCount() > 5)
             {
                 statusValueLabel.setText("DANGER");
                 statusValueLabel.setForeground(Color.RED);
                 frame.setTitle("Network Simulation -- Server Under Attack");
-            } 
-            else 
+            }
+            else
             {
                 statusValueLabel.setText("SECURE");
                 statusValueLabel.setForeground(Color.GREEN);
             }
-            
+
+            // A finished run overrides the live status and stops the simulation.
+            if (sim.getOutcome() != CyberGridSimulation.Outcome.ONGOING)
+            {
+                endSimulation(sim.getOutcome());
+            }
+
             simPanel.repaint();
         });
+    }
+
+    /**
+     * Freezes the simulation on its final frame and reflects the result: the status
+     * label and window title announce the outcome, and the playback controls are
+     * disabled so the finished run cannot be resumed.
+     */
+    private void endSimulation(CyberGridSimulation.Outcome outcome)
+    {
+        animationTimer.stop();
+
+        boolean victory = outcome == CyberGridSimulation.Outcome.VICTORY;
+        statusValueLabel.setText(victory ? "VICTORY" : "DEFEATED");
+        statusValueLabel.setForeground(victory ? Color.GREEN : Color.RED);
+        frame.setTitle(victory
+                ? "Network Simulation -- Server Secured (Victory)"
+                : "Network Simulation -- Server Lost (Defeat)");
+
+        startButton.setEnabled(false);
+        pauseButton.setEnabled(false);
+        speedSlider.setEnabled(false);
     }
     
     /**
@@ -201,8 +233,8 @@ public class CyberGridView
         LimitedField malwareField = new LimitedField("0 - 100", 0, 100, 6);
         LimitedField sentinelField = new LimitedField("0 - 100", 0, 100, 6);
         LimitedField repairField = new LimitedField("0 - 100", 0, 100, 6);
-        // Vaults can occupy any non-core cell; the hard cap (rows x cols - 4) is applied
-        // on OK once the final grid size is known.
+        // Vaults can occupy any non-core cell, the hard cap of (rows x cols - 4) is applied due to this
+        // once the grid size is known
         LimitedField vaultField = new LimitedField("0 - rows x cols - 4", 0, 150 * 150 - 4, 6);
 
         JComboBox<SimulationConfig.MalwareMovement> malwareMoveBox =

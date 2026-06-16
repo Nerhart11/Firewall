@@ -15,6 +15,9 @@ import java.util.Random;
  */
 public class CyberGridSimulation
 {
+    /** Result of the simulation. ONGOING until a win or loss condition is met. */
+    public enum Outcome { ONGOING, VICTORY, DEFEAT }
+
     private NetworkNode[][] grid;
     private List<ActiveAgent> agents;
     private final int rows;
@@ -25,6 +28,13 @@ public class CyberGridSimulation
     // Countdown timers (in ticks) for malware waiting to respawn under RESPAWN mode.
     private List<Integer> respawnTimers = new ArrayList<>();
 
+    // Win/loss tracking.
+    private Outcome outcome = Outcome.ONGOING;
+    private int tickCount = 0;
+    private SystemCore.CoreHealth coreHealth;
+    private final boolean hadDefenders;
+    private final boolean hadMalware;
+
     public CyberGridSimulation(SimulationConfig config)
     {
         this.config = config;
@@ -32,6 +42,11 @@ public class CyberGridSimulation
         this.cols = config.getCols();
         this.grid = new NetworkNode[rows][cols];
         this.agents = new ArrayList<>();
+
+        // A run can only be lost by losing defenders / won by clearing malware if it
+        // actually started with some; otherwise those checks would fire on tick one.
+        this.hadDefenders = config.getNumSentinels() + config.getNumRepairBots() > 0;
+        this.hadMalware = config.getNumMalware() > 0;
 
         initializeGrid();
     }
@@ -47,14 +62,16 @@ public class CyberGridSimulation
             }
         }
 
-        // Step 2: Place 2x2 SystemCore at center
+        // Step 2: Place 2x2 SystemCore at center. All four cells share one health pool
+        // so the core behaves as a single high-health target.
         int centerRow = rows / 2 - 1;
         int centerCol = cols / 2 - 1;
-        for (int row = centerRow; row <= centerRow + 1; row++) 
+        coreHealth = new SystemCore.CoreHealth(SystemCore.CORE_MAX_HP, SystemCore.CORE_REPAIR_THRESHOLD);
+        for (int row = centerRow; row <= centerRow + 1; row++)
         {
-            for (int col = centerCol; col <= centerCol + 1; col++) 
+            for (int col = centerCol; col <= centerCol + 1; col++)
             {
-                grid[row][col] = new SystemCore(row, col);
+                grid[row][col] = new SystemCore(row, col, coreHealth);
             }
         }
 
@@ -156,6 +173,11 @@ public class CyberGridSimulation
     {
         if (agents == null) return;
 
+        // Once the run is decided, stop advancing it.
+        if (outcome != Outcome.ONGOING) return;
+
+        tickCount++;
+
         CombatResolver resolver = new CombatResolver();
 
         // Act phase: every active agent scans and queues combat (no mutation yet).
@@ -222,6 +244,52 @@ public class CyberGridSimulation
                 agent.move(this.rows, this.cols);
             }
         }
+
+        checkOutcome();
+    }
+
+    /**
+     * Evaluates the win/loss conditions after a tick and latches the result. Losses
+     * are checked before wins so an overrun network never registers as a victory.
+     * Defeat: the System Core is destroyed, the grid is corrupted past the configured
+     * threshold, or every defender has fallen. Victory: a configured survival tick
+     * limit is reached with the core intact, or all malware is cleared with none
+     * pending respawn.
+     */
+    private void checkOutcome()
+    {
+        if (coreHealth != null && coreHealth.isCorrupted())
+        {
+            outcome = Outcome.DEFEAT;
+            return;
+        }
+        if (getInfectionPercentage() >= config.getInfectionLossThreshold())
+        {
+            outcome = Outcome.DEFEAT;
+            return;
+        }
+        if (hadDefenders && getDefenderCount() == 0)
+        {
+            outcome = Outcome.DEFEAT;
+            return;
+        }
+
+        int maxTicks = config.getMaxTicks();
+        if (maxTicks > 0 && tickCount >= maxTicks)
+        {
+            outcome = Outcome.VICTORY;
+            return;
+        }
+        if (hadMalware && getMalwareCount() == 0 && respawnTimers.isEmpty())
+        {
+            outcome = Outcome.VICTORY;
+        }
+    }
+
+    /** @return the current win/loss state of the simulation. */
+    public Outcome getOutcome()
+    {
+        return outcome;
     }
 
     /**
@@ -233,9 +301,9 @@ public class CyberGridSimulation
         int count = 0;
         if (this.agents != null) 
         {
-            for (ActiveAgent a : this.agents) 
+            for (ActiveAgent a : this.agents)
             {
-                if (a instanceof models.MalwareStrain) 
+                if (a instanceof models.MalwareStrain && !a.isCorrupted())
                 {
                     count++;
                 }
@@ -275,14 +343,38 @@ public class CyberGridSimulation
      * Gets the total number of protective security sentinels currently patrolling.
      * @return the count of active AntivirusSentinel agents
      */
-    public int getSentinelCount() 
+    public int getSentinelCount()
     {
         int count = 0;
-        if (this.agents != null) 
+        if (this.agents != null)
         {
-            for (ActiveAgent a : this.agents) 
+            for (ActiveAgent a : this.agents)
             {
-                if (a instanceof models.AntivirusSentinel) 
+                if (a instanceof models.AntivirusSentinel && !a.isCorrupted())
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Gets the total number of living defenders on the grid: both AntivirusSentinels
+     * and RepairBots that have not been corrupted. Downed defenders are excluded and
+     * count again once a RepairBot revives them.
+     * @return the count of active defending agents
+     */
+    public int getDefenderCount()
+    {
+        int count = 0;
+        if (this.agents != null)
+        {
+            for (ActiveAgent a : this.agents)
+            {
+                boolean isDefender = a instanceof models.AntivirusSentinel
+                        || a instanceof models.RepairBot;
+                if (isDefender && !a.isCorrupted())
                 {
                     count++;
                 }
