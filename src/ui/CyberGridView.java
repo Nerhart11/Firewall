@@ -58,7 +58,7 @@ public class CyberGridView
         sidePanel.add(Box.createRigidArea(new Dimension(0, 25))); 
 
         // 1. Threat Level Section
-        JLabel malwareHeader = new JLabel("THREAT LEVEL");
+        JLabel malwareHeader = new JLabel("ACTIVE MALWARE:");
         malwareHeader.setForeground(Color.GRAY);
         malwareHeader.setFont(new Font("Monospaced", Font.BOLD, 12));
         sidePanel.add(malwareHeader);
@@ -166,6 +166,7 @@ public class CyberGridView
     
     private void setupAnimationTimer()
     {
+        
         animationTimer = new Timer(sim.getConfig().getTickDelay(), e ->
         {
             sim.tick();
@@ -191,7 +192,9 @@ public class CyberGridView
             // A finished run overrides the live status and stops the simulation.
             if (sim.getOutcome() != CyberGridSimulation.Outcome.ONGOING)
             {
-                endSimulation(sim.getOutcome());
+                animationTimer.stop();
+                frame.dispose();
+                createNewEndScreen(sim.getOutcome(), sim.getTickCount());
             }
 
             simPanel.repaint();
@@ -199,24 +202,99 @@ public class CyberGridView
     }
 
     /**
-     * Freezes the simulation on its final frame and reflects the result: the status
-     * label and window title announce the outcome, and the playback controls are
-     * disabled so the finished run cannot be resumed.
+     * Terminates the active simulation view by destroying the primary window framework 
+     * and launching a dedicated, standalone endgame console dashboard.
+     * This method swaps the layout to display final mission metrics, including total 
+     * operational cycles (ticks), final malware threat levels, surviving defenders, 
+     * and total grid corruption percentages, presented inside a specialized dark-themed
+     * terminal window container.
+     *
+     * @param outcome    the final resolution state of the environment engine, indicating 
+     * either a structural victory or a critical system compromise.
+     * @param totalTicks the total number of processing simulation loops executed by the 
+     * back-end background timer before termination.
      */
-    private void endSimulation(CyberGridSimulation.Outcome outcome)
+    
+    private void createNewEndScreen(CyberGridSimulation.Outcome outcome, int totalTicks)
     {
-        animationTimer.stop();
-
         boolean victory = outcome == CyberGridSimulation.Outcome.VICTORY;
-        statusValueLabel.setText(victory ? "VICTORY" : "DEFEATED");
-        statusValueLabel.setForeground(victory ? Color.GREEN : Color.RED);
-        frame.setTitle(victory
-                ? "Network Simulation -- Server Secured (Victory)"
-                : "Network Simulation -- Server Lost (Defeat)");
+        
+        JFrame endFrame = new JFrame(victory ? "SYSTEM SECURED" : "SYSTEM TAKEOVER");
+        endFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        endFrame.setSize(new Dimension(500, 400));
+        endFrame.setLocationRelativeTo(null);
+        endFrame.setResizable(false);
 
-        startButton.setEnabled(false);
-        pauseButton.setEnabled(false);
-        speedSlider.setEnabled(false);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBackground(Color.decode("#121212"));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+
+        JLabel resultLabel = new JLabel(victory ? "VICTORY!" : "MALWARE TOOK OVER");
+        resultLabel.setForeground(victory ? Color.GREEN : Color.RED);
+        resultLabel.setFont(new Font("Monospaced", Font.BOLD, 28));
+        resultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(resultLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        
+        JLabel subLabel = new JLabel(victory ? "All malware was successfully eliminated." : "System has been compromised.");
+        subLabel.setForeground(Color.LIGHT_GRAY);
+        subLabel.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        subLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(subLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 35)));
+
+        JLabel statsHeader = new JLabel("FINAL Sim Stats");
+        statsHeader.setForeground(Color.CYAN);
+        statsHeader.setFont(new Font("Monospaced", Font.BOLD, 14));
+        statsHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(statsHeader);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        
+        String[] statLines;
+        
+        if (victory) 
+        {
+            // If defenders won, show how many malware were killed, and show surviving defenders
+            int totalMalwareKilled = sim.getConfig().getNumMalware() - sim.getMalwareCount();
+            statLines = new String[] {
+                "Total Cycles (Ticks): " + totalTicks,
+                "Malware Eliminated: " + totalMalwareKilled,
+                "Surviving Defenders: " + sentinelValueLabel.getText(),
+                "Grid Corruption: " + infectionValueLabel.getText()
+            };
+        } 
+        else 
+        {
+            // If malware won, hide surviving defenders entirely and only show how many died
+            int totalStartingDefenders = sim.getConfig().getNumSentinels() + sim.getConfig().getNumRepairBots();
+            int totalDefendersKilled = totalStartingDefenders - sim.getDefenderCount();
+            statLines = new String[] {
+                "Total Cycles (Ticks): " + totalTicks,
+                "Defenders Defeated: " + totalDefendersKilled,
+                "Surviving Malware: " + malwareValueLabel.getText(),
+                "Grid Corruption: " + infectionValueLabel.getText()
+            };
+        }
+        
+        for (String line : statLines) {
+            JLabel statLabel = new JLabel(line);
+            statLabel.setForeground(Color.WHITE);
+            statLabel.setFont(new Font("Monospaced", Font.PLAIN, 14));
+            statLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            mainPanel.add(statLabel);
+            mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        }
+        
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 25)));
+        JButton exitButton = new JButton("Terminate Sim");
+        exitButton.setFont(new Font("Monospaced", Font.BOLD, 12));
+        exitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exitButton.addActionListener(e -> System.exit(0));
+        mainPanel.add(exitButton);
+
+        endFrame.add(mainPanel);
+        endFrame.setVisible(true);
     }
     
     /**

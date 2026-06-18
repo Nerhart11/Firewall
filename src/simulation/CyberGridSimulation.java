@@ -248,6 +248,10 @@ public class CyberGridSimulation
         checkOutcome();
     }
 
+    public int getTickCount()
+    {
+        return this.tickCount;
+    }
     /**
      * Evaluates the win/loss conditions after a tick and latches the result. Losses
      * are checked before wins so an overrun network never registers as a victory.
