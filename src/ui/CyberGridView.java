@@ -112,6 +112,12 @@ public class CyberGridView
         
         startButton = new JButton("Start");
         pauseButton = new JButton("Pause Simulation");
+        
+        startButton.setMnemonic(java.awt.event.KeyEvent.VK_S);
+        startButton.setToolTipText("Press Alt + S to Start");
+
+        pauseButton.setMnemonic(java.awt.event.KeyEvent.VK_P);
+        pauseButton.setToolTipText("Press Alt + P to Pause");
 
         speedSlider = new JSlider(JSlider.HORIZONTAL, 1, 10, 8);
         speedSlider.setBackground(Color.DARK_GRAY);
@@ -177,11 +183,16 @@ public class CyberGridView
             infectionValueLabel.setText(String.format("%.1f%%", sim.getInfectionPercentage()));
             
             // Handle active security state shifts dynamically
-            if (sim.getInfectionPercentage() > 25.0 || sim.getMalwareCount() > 5)
+            if (sim.getInfectionPercentage() > 25.0)
+            {
+                statusValueLabel.setText("CAUTION");
+                statusValueLabel.setForeground(Color.YELLOW);
+                frame.setTitle("Network Simulation -- Server Under Attack");
+            } else if (sim.getInfectionPercentage() > 50.0)
             {
                 statusValueLabel.setText("DANGER");
                 statusValueLabel.setForeground(Color.RED);
-                frame.setTitle("Network Simulation -- Server Under Attack");
+                frame.setTitle("Network Simulation -- Critial Condition");
             }
             else
             {
@@ -238,7 +249,7 @@ public class CyberGridView
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         
         JLabel subLabel = new JLabel(victory ? "All malware was successfully eliminated." : "System has been compromised.");
-        subLabel.setForeground(Color.LIGHT_GRAY);
+        subLabel.setForeground(Color.WHITE);
         subLabel.setFont(new Font("Monospaced", Font.PLAIN, 12));
         subLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         mainPanel.add(subLabel);
@@ -292,6 +303,9 @@ public class CyberGridView
         exitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         exitButton.addActionListener(e -> System.exit(0));
         mainPanel.add(exitButton);
+        
+        exitButton.setMnemonic(java.awt.event.KeyEvent.VK_T);
+        exitButton.setToolTipText("Press Alt + T to Terminate");
 
         endFrame.add(mainPanel);
         endFrame.setVisible(true);
