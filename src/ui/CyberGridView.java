@@ -103,6 +103,22 @@ public class CyberGridView
         statusValueLabel.setForeground(Color.GREEN);
         statusValueLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
         sidePanel.add(statusValueLabel);
+        sidePanel.add(Box.createRigidArea(new Dimension(0, 25)));
+
+        // 5. Legend Section. Swatches mirror the canvas: squares are static grid
+        // nodes, circles are mobile agents.
+        JLabel legendHeader = new JLabel("LEGEND");
+        legendHeader.setForeground(Color.GRAY);
+        legendHeader.setFont(new Font("Monospaced", Font.BOLD, 12));
+        sidePanel.add(legendHeader);
+        sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        sidePanel.add(makeLegendEntry("System Core", new Color(255, 215, 0), false));
+        sidePanel.add(makeLegendEntry("Standard File", new Color(0, 255, 204), false));
+        sidePanel.add(makeLegendEntry("Encrypted Vault", new Color(155, 0, 245), false));
+        sidePanel.add(makeLegendEntry("Antivirus Sentinel", new Color(0, 170, 255), true));
+        sidePanel.add(makeLegendEntry("Repair Bot", new Color(170, 221, 255), true));
+        sidePanel.add(makeLegendEntry("Malware Strain", new Color(255, 0, 50), true));
 
         frame.add(sidePanel, BorderLayout.EAST);
         
@@ -169,7 +185,51 @@ public class CyberGridView
         frame.setVisible(true);
         frame.setResizable(false);
     }
-    
+
+    /**
+     * Builds a single legend row: a small colored swatch beside a label. The swatch
+     * shape echoes how the entity is drawn on the grid -- a filled square for static
+     * nodes, a filled circle for mobile agents.
+     *
+     * @param name    human-readable entity name shown next to the swatch
+     * @param color   the entity's base color, matching its {@code getColor()} output
+     * @param isAgent {@code true} to draw the swatch as a circle (agent), {@code false} for a square (node)
+     * @return a left-aligned row component ready to add to the sidebar
+     */
+    private JComponent makeLegendEntry(String name, Color color, boolean isAgent)
+    {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(220, 24));
+
+        JComponent swatch = new JComponent()
+        {
+            @Override
+            protected void paintComponent(Graphics g)
+            {
+                g.setColor(color);
+                if (isAgent)
+                {
+                    g.fillOval(0, 0, 14, 14);
+                }
+                else
+                {
+                    g.fillRect(0, 0, 14, 14);
+                }
+            }
+        };
+        swatch.setPreferredSize(new Dimension(14, 14));
+
+        JLabel label = new JLabel(name);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Monospaced", Font.PLAIN, 11));
+
+        row.add(swatch);
+        row.add(label);
+        return row;
+    }
+
     private void setupAnimationTimer()
     {
         
