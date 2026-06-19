@@ -328,8 +328,11 @@ public class CyberGridView
 
         LimitedField respawnDelayField = new LimitedField("0 - 500", 0, 500, 6);
 
+        // Survival win cap; 0 leaves the run uncapped.
+        LimitedField maxTicksField = new LimitedField("0 = simulate until win/lose", 0, 1_000_000, 6);
+
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(9, 2, 10, 10));
+        panel.setLayout(new GridLayout(10, 2, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         panel.add(new JLabel("Grid Rows:"));
@@ -350,6 +353,8 @@ public class CyberGridView
         panel.add(deathBehaviorBox);
         panel.add(new JLabel("Respawn Delay (ticks):"));
         panel.add(respawnDelayField);
+        panel.add(new JLabel("Max Simulation Age in Ticks:"));
+        panel.add(maxTicksField);
 
         int result = JOptionPane.showConfirmDialog(
             null, 
@@ -378,6 +383,7 @@ public class CyberGridView
             defaults.setMalwareMovement((SimulationConfig.MalwareMovement) malwareMoveBox.getSelectedItem());
             defaults.setDeathBehavior((SimulationConfig.DeathBehavior) deathBehaviorBox.getSelectedItem());
             defaults.setRespawnDelay(respawnDelayField.getValueOrDefault(defaults.getRespawnDelay()));
+            defaults.setMaxTicks(maxTicksField.getValueOrDefault(defaults.getMaxTicks()));
             return true;
         }
         return false;
